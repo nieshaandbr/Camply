@@ -64,8 +64,13 @@ export default function LoginPage() {
         alert('Incorrect password');
       } else {
         setAdmin(data);
-        localStorage.setItem('camply_admin_session', JSON.stringify(data));
-        navigate('/dashboard');
+        localStorage.setItem('camply_admin_sessions', JSON.stringify(data));
+
+        if (data.is_first_login) {
+          navigate('/change-password');
+        } else {
+          navigate('/dashboard')
+        }
       }
     } catch (err) {
       console.error('Admin login error:', err);

@@ -20,7 +20,7 @@ export default function SuperAdminDashboardPage() {
       <div style={styles.headerRow}>
         <div>
           <h1 style={styles.title}>Super Admin Dashboard</h1>
-          <p style={styles.subtitle}>Manage universities and platform setup.</p>
+          <p style={styles.subtitle}>Manage universities and pilot onboarding.</p>
         </div>
 
         <button style={styles.logoutBtn} onClick={handleLogout}>
@@ -46,6 +46,19 @@ export default function SuperAdminDashboardPage() {
             onClick={() => navigate('/super-admin/universities')}
           >
             Open Universities
+          </button>
+        </div>
+
+        <div style={styles.card}>
+          <h3 style={styles.cardTitle}>Pilot Onboarding</h3>
+          <p style={styles.cardText}>
+            Add pilot universities, assign admins, and onboard students with temporary passwords.
+          </p>
+          <button
+            style={styles.actionBtn}
+            onClick={() => navigate('/super-admin/pilot-onboarding')}
+          >
+            Open Onboarding
           </button>
         </div>
       </div>
@@ -101,6 +114,7 @@ const styles = {
   cardText: {
     color: '#6b7280',
     marginBottom: '16px',
+    lineHeight: 1.5,
   },
   actionBtn: {
     padding: '12px 16px',

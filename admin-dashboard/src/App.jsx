@@ -13,6 +13,12 @@ import SuperAdminDashboardPage from './pages/super-admin/SuperAdminDashboardPage
 import UniversitiesPage from './pages/super-admin/UniversitiesPage';
 import EditUniversityPage from './pages/super-admin/EditUniversityPage';
 
+// Page for first login to set up admin account
+import ChangePasswordPage from './pages/auth/ChangePasswordPage'
+
+// Temporary page for onboarding pilot universities and students
+import PilotOnboardingPage from './pages/super-admin/PilotOnboardingPage';
+
 // 🛠 Layout Component: The "Shell" of your dashboard
 const Layout = ({ children }) => (
   <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -33,6 +39,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+          {/* First login page to set up admin account */}
+          <Route path="/change-password" element={<ChangePasswordPage />}/>
         
         {/* All these routes are wrapped in Layout to keep Sidebar visible */}
         <Route path="/dashboard" element={<ProtectedRoute><Layout><DashboardPage /></Layout></ProtectedRoute>} />
@@ -44,6 +52,9 @@ export default function App() {
         <Route path="/super-admin/dashboard" element={<SuperAdminDashboardPage />} />
         <Route path="/super-admin/universities" element={<UniversitiesPage />} />
         <Route path="/super-admin/universities/:id" element={<EditUniversityPage />} />
+
+        {/* Pilot on boarding temporary route */}
+        <Route path="/super-admin/pilot-onboarding" element={<PilotOnboardingPage />} />
       
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>

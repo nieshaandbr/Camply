@@ -3,8 +3,6 @@ import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
 
 export default function PostForm() {
-  // The logged-in admin is needed so the post is linked
-  // to the correct university and creator.
   const { admin } = useAuthStore();
 
   const [title, setTitle] = useState('');
@@ -12,54 +10,78 @@ export default function PostForm() {
   const [type, setType] = useState('announcement');
   const [ticketLink, setTicketLink] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
-  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaFiles, setMediaFiles] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // This creates a preview URL for the selected media file.
-  // It helps the admin see the image/video before publishing.
-  const mediaPreviewUrl = useMemo(() => {
-    if (!mediaFile) return null;
-    return URL.createObjectURL(mediaFile);
-  }, [mediaFile]);
-
-  const isVideoFile = mediaFile?.type?.startsWith('video/');
+  const previewUrls = useMemo(() => {
+    return mediaFiles.map((file) => URL.createObjectURL(file));
+  }, [mediaFiles]);
 
   const handleFileChange = (e) => {
-    const file = e.target.files?.[0] || null;
-    setMediaFile(file);
+    const files = Array.from(e.target.files || []);
+
+    // For pilot:
+    // - multiple images allowed
+    // - single video allowed
+    if (!files.length) {
+      setMediaFiles([]);
+      return;
+    }
+
+    const hasVideo = files.some((file) => file.type.startsWith('video/'));
+
+    if (hasVideo && files.length > 1) {
+      alert('For now, video posts can only have one video file.');
+      return;
+    }
+
+    setMediaFiles(files);
   };
 
   const uploadMediaIfNeeded = async () => {
-    // If no media was chosen, return empty values.
-    if (!mediaFile) {
-      return { media_url: null, media_path: null };
+    if (!mediaFiles.length) {
+      return {
+        media_url: null,
+        media_path: null,
+        media_urls: [],
+      };
     }
 
-    // Create a clean and unique file name for storage.
-    const safeFileName = `${Date.now()}-${mediaFile.name.replace(/\s+/g, '-')}`;
-    const filePath = `${admin.university_id}/${safeFileName}`;
+    const uploadedUrls = [];
+    const uploadedPaths = [];
 
-    const { error: uploadError } = await supabase.storage
-      .from('post-media')
-      .upload(filePath, mediaFile, {
-        cacheControl: '3600',
-        upsert: false,
-      });
+    for (const file of mediaFiles) {
+      const safeFileName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 7)}-${file.name.replace(/\s+/g, '-')}`;
 
-    if (uploadError) {
-      throw new Error(`Media upload failed: ${uploadError.message}`);
+      const filePath = `${admin.university_id}/${safeFileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('post-media')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw new Error(`Media upload failed: ${uploadError.message}`);
+      }
+
+      const { data } = supabase.storage.from('post-media').getPublicUrl(filePath);
+
+      uploadedUrls.push(data?.publicUrl || null);
+      uploadedPaths.push(filePath);
     }
-
-    const { data } = supabase.storage.from('post-media').getPublicUrl(filePath);
 
     return {
-      media_url: data?.publicUrl || null,
-      media_path: filePath,
+      media_url: uploadedUrls[0] || null,
+      media_path: uploadedPaths[0] || null,
+      media_urls: uploadedUrls,
     };
   };
 
   const createNotificationsForStudents = async (postType, postTitle) => {
-    // Fetch all students belonging to the admin's university.
     const { data: students, error: studentsError } = await supabase
       .from('students')
       .select('id')
@@ -69,11 +91,8 @@ export default function PostForm() {
       throw new Error(`Failed to fetch students for notifications: ${studentsError.message}`);
     }
 
-    if (!students || students.length === 0) {
-      return;
-    }
+    if (!students?.length) return;
 
-    // Create one notification per student.
     const notificationRows = students.map((student) => ({
       user_id: student.id,
       message: `New ${postType} posted: ${postTitle}`,
@@ -114,11 +133,16 @@ export default function PostForm() {
       }
     }
 
+    // Light validation for pilot
+    if (mediaFiles.length > 5) {
+      alert('Maximum 5 media files per post for now.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Upload media first so the post can store its URL.
-      const { media_url, media_path } = await uploadMediaIfNeeded();
+      const { media_url, media_path, media_urls } = await uploadMediaIfNeeded();
 
       const payload = {
         title: title.trim(),
@@ -128,12 +152,12 @@ export default function PostForm() {
         created_by: admin.id,
         media_url,
         media_path,
+        media_urls,
         ticket_link: ticketLink.trim() || null,
         created_at: new Date().toISOString(),
         expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       };
 
-      // Insert the post into the posts table.
       const { error } = await supabase.from('posts').insert([payload]);
 
       if (error) {
@@ -142,18 +166,15 @@ export default function PostForm() {
         return;
       }
 
-      // After the post is created, notify students in the same university.
       await createNotificationsForStudents(type, title.trim());
 
       alert('Post created successfully!');
-
-      // Reset the form after a successful submission.
       setTitle('');
       setDescription('');
       setType('announcement');
       setTicketLink('');
       setExpiresAt('');
-      setMediaFile(null);
+      setMediaFiles([]);
     } catch (err) {
       console.error('Unexpected create post error:', err);
       alert(err.message || 'Something went wrong while creating the post.');
@@ -161,6 +182,9 @@ export default function PostForm() {
       setLoading(false);
     }
   };
+
+  const isVideoPost =
+    mediaFiles.length === 1 && mediaFiles[0]?.type?.startsWith('video/');
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
@@ -226,25 +250,36 @@ export default function PostForm() {
       </div>
 
       <div style={styles.field}>
-        <label style={styles.label}>Upload Image or Video</label>
+        <label style={styles.label}>Upload Media</label>
         <input
           type="file"
           accept="image/*,video/*"
+          multiple
           onChange={handleFileChange}
           style={styles.fileInput}
         />
         <p style={styles.helperText}>
-          You can publish with media or leave this empty for a text-only post.
+          You can upload up to 5 images, or 1 video. For now, image carousels are supported.
         </p>
       </div>
 
-      {mediaPreviewUrl && (
+      {!!previewUrls.length && (
         <div style={styles.previewBox}>
           <p style={styles.previewTitle}>Preview</p>
-          {isVideoFile ? (
-            <video src={mediaPreviewUrl} controls style={styles.previewMedia} />
+
+          {isVideoPost ? (
+            <video src={previewUrls[0]} controls style={styles.previewMedia} />
           ) : (
-            <img src={mediaPreviewUrl} alt="Preview" style={styles.previewMedia} />
+            <div style={styles.previewGrid}>
+              {previewUrls.map((url, index) => (
+                <img
+                  key={index}
+                  src={url}
+                  alt={`Preview ${index + 1}`}
+                  style={styles.previewImage}
+                />
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -316,9 +351,21 @@ const styles = {
     borderRadius: '12px',
     background: '#000',
   },
+  previewGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '10px',
+  },
+  previewImage: {
+    width: '100%',
+    height: '180px',
+    objectFit: 'cover',
+    borderRadius: '12px',
+    background: '#000',
+  },
   button: {
     padding: '14px 20px',
-    background: '#001DAF',
+    background: '#1D3E6E',
     color: '#fff',
     border: 'none',
     borderRadius: '10px',
