@@ -33,7 +33,9 @@ export default function ApplicationsPage() {
             university_id
           )
         `)
-        .order('created_at', { ascending: false });
+        .eq('posts.university_id',
+          admin?.university_id)
+          .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Fetch applications error:', error);

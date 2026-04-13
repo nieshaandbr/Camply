@@ -5,6 +5,11 @@ export const useAuthStore = create((set) => ({
 
   setAdmin: (admin) => set({ admin }),
 
+  updateAdmin: (updatedAdmin) => {
+    localStorage.setItem('camply_admin_session', JSON.stringify(updatedAdmin));
+    set({ admin: updatedAdmin });
+  },
+
   logout: () => {
     localStorage.removeItem('camply_admin_session');
     set({ admin: null });

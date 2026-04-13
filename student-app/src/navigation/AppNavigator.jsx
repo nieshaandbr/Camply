@@ -3,31 +3,34 @@ import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 
-// Screens
 import LoginScreen from '../screens/auth/LoginScreen';
+import ChangePasswordScreen from '../screens/auth/ChangePasswordScreen';
 import BottomTabNavigator from './BottomTabNavigator';
 
 export default function AppNavigator() {
   const { user, isLoading, loadSession } = useAuthStore();
 
-  // 🔄 Load session on app start
   useEffect(() => {
     loadSession();
   }, []);
 
-  // ⏳ Show loading while checking session
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#1D3E6E" />
       </View>
     );
   }
 
   return (
     <NavigationContainer>
-      {/* 🔀 Conditional navigation */}
-      {user ? <BottomTabNavigator /> : <LoginScreen />}
+      {!user ? (
+        <LoginScreen />
+      ) : user.is_first_login ? (
+        <ChangePasswordScreen />
+      ) : (
+        <BottomTabNavigator />
+      )}
     </NavigationContainer>
   );
 }

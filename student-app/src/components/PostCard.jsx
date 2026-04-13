@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Linking,
 } from 'react-native';
+import PagerView from 'react-native-pager-view';
 import { VideoView, useVideoPlayer } from 'expo-video';
 
 const { width } = Dimensions.get('window');
@@ -27,15 +28,57 @@ function VideoPost({ uri }) {
   );
 }
 
+function ImageCarousel({ mediaUrls }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  return (
+    <View>
+      <PagerView
+        style={styles.media}
+        initialPage={0}
+        onPageSelected={(e) => setCurrentIndex(e.nativeEvent.position)}
+      >
+        {mediaUrls.map((url, index) => (
+          <View key={index} style={styles.page}>
+            <Image source={{ uri: url }} style={styles.media} resizeMode="cover" />
+          </View>
+        ))}
+      </PagerView>
+
+      {mediaUrls.length > 1 && (
+        <View style={styles.dotsRow}>
+          {mediaUrls.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                currentIndex === index && styles.activeDot,
+              ]}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function PostCard({ post, navigation }) {
   const mediaUrl = post.media_url || '';
-  const lowerUrl = mediaUrl.toLowerCase();
+  const mediaUrls = useMemo(() => {
+    if (Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+      return post.media_urls;
+    }
+    return mediaUrl ? [mediaUrl] : [];
+  }, [post.media_urls, mediaUrl]);
+
+  const lowerFirstUrl = (mediaUrls[0] || '').toLowerCase();
 
   const isVideo =
-    lowerUrl.endsWith('.mp4') ||
-    lowerUrl.endsWith('.mov') ||
-    lowerUrl.endsWith('.webm') ||
-    lowerUrl.endsWith('.m4v');
+    mediaUrls.length === 1 &&
+    (lowerFirstUrl.endsWith('.mp4') ||
+      lowerFirstUrl.endsWith('.mov') ||
+      lowerFirstUrl.endsWith('.webm') ||
+      lowerFirstUrl.endsWith('.m4v'));
 
   const handlePrimaryAction = () => {
     if (post.type === 'job') {
@@ -80,15 +123,11 @@ export default function PostCard({ post, navigation }) {
         </View>
       </View>
 
-      {mediaUrl ? (
+      {mediaUrls.length > 0 ? (
         isVideo ? (
-          <VideoPost uri={mediaUrl} />
+          <VideoPost uri={mediaUrls[0]} />
         ) : (
-          <Image
-            source={{ uri: mediaUrl }}
-            style={styles.media}
-            resizeMode="cover"
-          />
+          <ImageCarousel mediaUrls={mediaUrls} />
         )
       ) : (
         <View style={styles.mediaFallback}>
@@ -163,6 +202,26 @@ const styles = StyleSheet.create({
     width: width,
     height: width,
     backgroundColor: '#000',
+  },
+  page: {
+    flex: 1,
+  },
+  dotsRow: {
+    position: 'absolute',
+    bottom: 12,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  activeDot: {
+    backgroundColor: '#fff',
   },
   mediaFallback: {
     width: width,
