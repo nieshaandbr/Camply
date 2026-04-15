@@ -1,9 +1,42 @@
 import React from 'react';
 import PostForm from '../../components/PostForm';
+import { useAdminGuideStore } from '../../store/adminGuideStore';
+import AdminGuideOverlay from '../../components/guide/AdminGuideOverlay';
 
 export default function CreatePostPage() {
+  const { seenGuides, isLoaded, loadGuides, markGuideSeen } = useAdminGuideStore();
+
+  React.useEffect(() => {
+    loadGuides();
+  }, []);
+
+  const showGuide = isLoaded && !seenGuides.create_post;
+
   return (
     <div style={styles.page}>
+      <AdminGuideOverlay
+        visible={showGuide}
+        title="Create Post Guide"
+        steps={[
+          {
+            heading: 'Post Details',
+            description:
+              'Use this page to publish announcements, events, or jobs for students in your university.',
+          },
+          {
+            heading: 'Media Upload',
+            description:
+              'You can upload images, multiple images, or a single video depending on the content you want to share.',
+          },
+          {
+            heading: 'Ticket Link and Expiry',
+            description:
+              'For events, add a link if students need tickets. Use expiry so outdated content disappears automatically.',
+          },
+        ]}
+        onFinish={() => markGuideSeen('create_post')}
+      />
+
       <div style={styles.header}>
         <h1 style={styles.title}>Create New Post</h1>
         <p style={styles.subtitle}>

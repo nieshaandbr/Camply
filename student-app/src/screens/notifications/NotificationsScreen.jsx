@@ -9,14 +9,21 @@ import {
 } from 'react-native';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
+import { useGuideStore } from '../../store/guideStore';
 import NotificationCard from '../../components/NotificationCard';
+import GuideOverlay from '../../components/GuideOverlay';
 
 export default function NotificationsScreen() {
   const { user } = useAuthStore();
+  const { seenGuides, isLoaded, loadGuides, markGuideSeen } = useGuideStore();
 
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    loadGuides();
+  }, []);
 
   const fetchNotifications = async () => {
     try {
@@ -45,6 +52,8 @@ export default function NotificationsScreen() {
     fetchNotifications();
   }, []);
 
+  const showGuide = isLoaded && !seenGuides.notifications;
+
   if (loading) {
     return (
       <View style={styles.loaderWrap}>
@@ -55,6 +64,24 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
+      <GuideOverlay
+        visible={showGuide}
+        title="Notifications Guide"
+        steps={[
+          {
+            heading: 'Your Alerts',
+            description:
+              'This screen shows important updates sent to your account, such as new posts from your university.',
+          },
+          {
+            heading: 'Stay Updated',
+            description:
+              'Check this tab often so you do not miss jobs, announcements, or event updates.',
+          },
+        ]}
+        onFinish={() => markGuideSeen('notifications')}
+      />
+
       <Text style={styles.header}>Notifications</Text>
 
       <FlatList

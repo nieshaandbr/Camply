@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,13 +12,20 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
+import { useGuideStore } from '../../store/guideStore';
+import GuideOverlay from '../../components/GuideOverlay';
 
 export default function JobDetailScreen({ route, navigation }) {
   const { post } = route.params;
   const { user } = useAuthStore();
+  const { seenGuides, isLoaded, loadGuides, markGuideSeen } = useGuideStore();
 
   const [selectedCv, setSelectedCv] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadGuides();
+  }, []);
 
   const pickCv = async () => {
     try {
@@ -50,7 +57,6 @@ export default function JobDetailScreen({ route, navigation }) {
       throw new Error('Please choose a PDF before applying.');
     }
 
-    // Expo recommends reading picked files via expo-file-system's File API.
     const localFile = new File(selectedCv.uri);
     const arrayBuffer = await localFile.arrayBuffer();
 
@@ -111,8 +117,33 @@ export default function JobDetailScreen({ route, navigation }) {
     }
   };
 
+  const showGuide = isLoaded && !seenGuides.job_apply;
+
   return (
     <SafeAreaView style={styles.container}>
+      <GuideOverlay
+        visible={showGuide}
+        title="Job Application Guide"
+        steps={[
+          {
+            heading: 'Job Details',
+            description:
+              'This page explains the opportunity and lets you decide whether you want to apply.',
+          },
+          {
+            heading: 'Choose PDF',
+            description:
+              'Select your CV as a PDF from your device before submitting your application.',
+          },
+          {
+            heading: 'Submit Application',
+            description:
+              'Once your CV is selected, use the submit button to send your application to your university admin.',
+          },
+        ]}
+        onFinish={() => markGuideSeen('job_apply')}
+      />
+
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.typeTag}>JOB OPPORTUNITY</Text>
 

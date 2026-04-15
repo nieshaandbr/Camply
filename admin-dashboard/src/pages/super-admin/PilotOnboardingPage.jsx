@@ -2,8 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import UniversityForm from '../../components/super-admin/UniversityForm';
 import StudentBulkForm from '../../components/super-admin/StudentBulkForm';
+import { useAdminGuideStore } from '../../store/adminGuideStore';
+import AdminGuideOverlay from '../../components/guide/AdminGuideOverlay';
 
 export default function PilotOnboardingPage() {
+  const { seenGuides, isLoaded, loadGuides, markGuideSeen } = useAdminGuideStore();
+
   const [universities, setUniversities] = useState([]);
   const [selectedUniversityId, setSelectedUniversityId] = useState('');
   const [loadingUniversities, setLoadingUniversities] = useState(true);
@@ -33,10 +37,36 @@ export default function PilotOnboardingPage() {
 
   useEffect(() => {
     fetchUniversities();
+    loadGuides();
   }, []);
+
+  const showGuide = isLoaded && !seenGuides.pilot_onboarding;
 
   return (
     <div style={styles.page}>
+      <AdminGuideOverlay
+        visible={showGuide}
+        title="Pilot Onboarding Guide"
+        steps={[
+          {
+            heading: 'Step 1 — Create University',
+            description:
+              'Start by creating the pilot university and assigning its main admin account.',
+          },
+          {
+            heading: 'Step 2 — Add Students',
+            description:
+              'After the university exists, select it and add students with temporary passwords for pilot onboarding.',
+          },
+          {
+            heading: 'Temporary Passwords',
+            description:
+              'Use generated temporary passwords so users can log in once and then create their own secure passwords.',
+          },
+        ]}
+        onFinish={() => markGuideSeen('pilot_onboarding')}
+      />
+
       <div style={styles.header}>
         <h1 style={styles.title}>Pilot Onboarding</h1>
         <p style={styles.subtitle}>
