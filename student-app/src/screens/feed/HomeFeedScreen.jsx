@@ -11,17 +11,24 @@ import {
 
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
+import { useGuideStore } from '../../store/guideStore';
 import PostCard from '../../components/PostCard';
+import GuideOverlay from '../../components/GuideOverlay';
 
 const FILTERS = ['all', 'announcement', 'event', 'job'];
 
 export default function HomeFeedScreen({ navigation }) {
   const { user } = useAuthStore();
+  const { seenGuides, isLoaded, loadGuides, markGuideSeen } = useGuideStore();
 
   const [posts, setPosts] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    loadGuides();
+  }, []);
 
   const fetchPosts = async () => {
     try {
@@ -56,6 +63,8 @@ export default function HomeFeedScreen({ navigation }) {
     return posts.filter((post) => post.type === selectedFilter);
   }, [posts, selectedFilter]);
 
+  const showGuide = isLoaded && !seenGuides.home_feed;
+
   if (loading) {
     return (
       <View style={styles.loaderWrap}>
@@ -66,6 +75,29 @@ export default function HomeFeedScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <GuideOverlay
+        visible={showGuide}
+        title="Home Feed Guide"
+        steps={[
+          {
+            heading: 'Feed Header',
+            description:
+              'This is your main campus feed. It shows the latest updates from your university in one place.',
+          },
+          {
+            heading: 'Filters',
+            description:
+              'Use these filters to quickly switch between announcements, events, jobs, or all posts.',
+          },
+          {
+            heading: 'Posts',
+            description:
+              'Tap job posts to apply, and use event buttons to open ticket or registration links when available.',
+          },
+        ]}
+        onFinish={() => markGuideSeen('home_feed')}
+      />
+
       <View style={styles.headerWrap}>
         <Text style={styles.header}>Camply</Text>
         <Text style={styles.subHeader}>Your university updates in one place</Text>
@@ -92,9 +124,7 @@ export default function HomeFeedScreen({ navigation }) {
       <FlatList
         data={filteredPosts}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <PostCard post={item} navigation={navigation} />
-        )}
+        renderItem={({ item }) => <PostCard post={item} navigation={navigation} />}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         refreshControl={

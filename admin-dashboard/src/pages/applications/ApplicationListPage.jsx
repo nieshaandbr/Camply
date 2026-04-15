@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
+import { useAdminGuideStore } from '../../store/adminGuideStore';
+import AdminGuideOverlay from '../../components/guide/AdminGuideOverlay';
 
-export default function ApplicationsPage() {
-  // We use the logged-in admin so we only show applications
-  // related to jobs created for that admin's university.
+export default function ApplicationListPage() {
   const { admin } = useAuthStore();
+  const { seenGuides, isLoaded, loadGuides, markGuideSeen } = useAdminGuideStore();
 
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadGuides();
+  }, []);
 
   const fetchApplications = async () => {
     setLoading(true);
@@ -33,9 +38,7 @@ export default function ApplicationsPage() {
             university_id
           )
         `)
-        .eq('posts.university_id',
-          admin?.university_id)
-          .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Fetch applications error:', error);
@@ -43,7 +46,6 @@ export default function ApplicationsPage() {
         return;
       }
 
-      // Only show applications for job posts that belong to this admin's university.
       const filteredApplications = (data || []).filter(
         (application) => application.posts?.university_id === admin?.university_id
       );
@@ -74,7 +76,6 @@ export default function ApplicationsPage() {
         return;
       }
 
-      // Refresh the list after updating so the UI stays in sync with the database.
       fetchApplications();
     } catch (err) {
       console.error('Unexpected update status error:', err);
@@ -82,12 +83,37 @@ export default function ApplicationsPage() {
     }
   };
 
+  const showGuide = isLoaded && !seenGuides.applications;
+
   if (loading) {
     return <div style={styles.loading}>Loading applications...</div>;
   }
 
   return (
     <div style={styles.page}>
+      <AdminGuideOverlay
+        visible={showGuide}
+        title="Applications Guide"
+        steps={[
+          {
+            heading: 'Review Applications',
+            description:
+              'This page shows students who applied for jobs created by your university.',
+          },
+          {
+            heading: 'View CV',
+            description:
+              'Open the student CV to review qualifications before deciding what to do next.',
+          },
+          {
+            heading: 'Update Status',
+            description:
+              'Use Accept or Reject to manage each student application and keep your hiring workflow organized.',
+          },
+        ]}
+        onFinish={() => markGuideSeen('applications')}
+      />
+
       <div style={styles.header}>
         <h1 style={styles.title}>Job Applications</h1>
         <p style={styles.subtitle}>
@@ -192,23 +218,19 @@ const styles = {
   page: {
     padding: '24px',
   },
-
   header: {
     marginBottom: '24px',
   },
-
   title: {
     fontSize: '30px',
     fontWeight: '700',
     margin: 0,
     color: '#111827',
   },
-
   subtitle: {
     marginTop: '8px',
     color: '#6b7280',
   },
-
   card: {
     background: '#ffffff',
     borderRadius: '16px',
@@ -216,50 +238,41 @@ const styles = {
     boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
     border: '1px solid #e5e7eb',
   },
-
   tableWrapper: {
     overflowX: 'auto',
   },
-
   table: {
     width: '100%',
     borderCollapse: 'collapse',
   },
-
   headerRow: {
     background: '#f8fafc',
     textAlign: 'left',
     borderBottom: '1px solid #e5e7eb',
   },
-
   th: {
     padding: '14px',
     fontSize: '13px',
     color: '#374151',
   },
-
   row: {
     borderBottom: '1px solid #f1f5f9',
   },
-
   td: {
     padding: '14px',
     verticalAlign: 'top',
     fontSize: '14px',
     color: '#111827',
   },
-
   smallText: {
     color: '#6b7280',
     fontSize: '12px',
   },
-
   link: {
     color: '#001DAF',
     fontWeight: '600',
     textDecoration: 'none',
   },
-
   statusBadge: {
     padding: '6px 10px',
     borderRadius: '999px',
@@ -268,27 +281,22 @@ const styles = {
     textTransform: 'capitalize',
     display: 'inline-block',
   },
-
   pendingBadge: {
     background: '#e0ecff',
     color: '#001DAF',
   },
-
   acceptedBadge: {
     background: '#dcfce7',
     color: '#166534',
   },
-
   rejectedBadge: {
     background: '#fee2e2',
     color: '#991b1b',
   },
-
   actionGroup: {
     display: 'flex',
     gap: '8px',
   },
-
   actionBtn: {
     border: 'none',
     borderRadius: '8px',
@@ -297,33 +305,27 @@ const styles = {
     fontWeight: '600',
     fontSize: '12px',
   },
-
   acceptBtn: {
     background: '#16a34a',
     color: '#fff',
   },
-
   rejectBtn: {
     background: '#dc2626',
     color: '#fff',
   },
-
   emptyState: {
     padding: '40px 20px',
     textAlign: 'center',
   },
-
   emptyTitle: {
     margin: 0,
     marginBottom: '8px',
     color: '#111827',
   },
-
   emptyText: {
     margin: 0,
     color: '#6b7280',
   },
-
   loading: {
     padding: '24px',
   },

@@ -1,13 +1,17 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSuperAdminStore } from '../../store/superAdminStore';
+import { useAdminGuideStore } from '../../store/adminGuideStore';
+import AdminGuideOverlay from '../../components/guide/AdminGuideOverlay';
 
 export default function SuperAdminDashboardPage() {
   const { superAdmin, loadSuperAdminSession, logoutSuperAdmin } = useSuperAdminStore();
+  const { seenGuides, isLoaded, loadGuides, markGuideSeen } = useAdminGuideStore();
   const navigate = useNavigate();
 
   useEffect(() => {
     loadSuperAdminSession();
+    loadGuides();
   }, []);
 
   const handleLogout = () => {
@@ -15,8 +19,33 @@ export default function SuperAdminDashboardPage() {
     navigate('/super-admin/login');
   };
 
+  const showGuide = isLoaded && !seenGuides.super_admin_dashboard;
+
   return (
     <div style={styles.page}>
+      <AdminGuideOverlay
+        visible={showGuide}
+        title="Super Admin Guide"
+        steps={[
+          {
+            heading: 'Platform Control',
+            description:
+              'This dashboard is for your platform-level management, not for a single university.',
+          },
+          {
+            heading: 'Universities',
+            description:
+              'Use the universities section to create and edit pilot universities and their main admins.',
+          },
+          {
+            heading: 'Pilot Onboarding',
+            description:
+              'Use pilot onboarding to set up test universities and add student accounts for the pilot program.',
+          },
+        ]}
+        onFinish={() => markGuideSeen('super_admin_dashboard')}
+      />
+
       <div style={styles.headerRow}>
         <div>
           <h1 style={styles.title}>Super Admin Dashboard</h1>
