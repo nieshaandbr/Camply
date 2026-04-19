@@ -41,7 +41,12 @@ export default function JobDetailScreen({ route, navigation }) {
       if (!file) return;
 
       if (file.mimeType && file.mimeType !== 'application/pdf') {
-        Alert.alert('Invalid File', 'Please select a PDF only.');
+        Alert.alert('Invalid File', 'Only PDF files are allowed.');
+        return;
+      }
+
+      if (file.size && file.size > 5 * 1024 * 1024) {
+        Alert.alert('File Too Large', 'Please upload a PDF smaller than 5MB.');
         return;
       }
 
@@ -78,7 +83,6 @@ export default function JobDetailScreen({ route, navigation }) {
 
     return {
       cv_url: data?.publicUrl || null,
-      cv_path: filePath,
     };
   };
 
@@ -146,7 +150,6 @@ export default function JobDetailScreen({ route, navigation }) {
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.typeTag}>JOB OPPORTUNITY</Text>
-
         <Text style={styles.title}>{post.title}</Text>
         <Text style={styles.description}>{post.description}</Text>
 
@@ -168,9 +171,7 @@ export default function JobDetailScreen({ route, navigation }) {
               </Text>
             </View>
           ) : (
-            <Text style={styles.helperText}>
-              Select a PDF file stored on your device.
-            </Text>
+            <Text style={styles.helperText}>Select a PDF file stored on your device.</Text>
           )}
 
           <TouchableOpacity

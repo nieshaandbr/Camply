@@ -5,6 +5,7 @@ import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import CreatePostPage from './pages/posts/CreatePostPage';
 import ApplicationListPage from './pages/applications/ApplicationListPage';
+import ViewPostHistoryPage from './pages/posts/ViewPostHistoryPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Super Admin Pages
@@ -46,7 +47,7 @@ export default function App() {
         <Route path="/dashboard" element={<ProtectedRoute><Layout><DashboardPage /></Layout></ProtectedRoute>} />
         <Route path="/create-post" element={<ProtectedRoute><Layout><CreatePostPage /></Layout></ProtectedRoute>} />
         <Route path="/applications" element={<ProtectedRoute><Layout><ApplicationListPage /></Layout></ProtectedRoute>} />
-
+        <Route path="/post-history" element={<ProtectedRoute><Layout><ViewPostHistoryPage /></Layout></ProtectedRoute>} />
         {/* Super Admin Routes */}
         <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
         <Route path="/super-admin/dashboard" element={<SuperAdminDashboardPage />} />
