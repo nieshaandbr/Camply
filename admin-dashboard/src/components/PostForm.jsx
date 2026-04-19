@@ -20,9 +20,6 @@ export default function PostForm() {
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files || []);
 
-    // For pilot:
-    // - multiple images allowed
-    // - single video allowed
     if (!files.length) {
       setMediaFiles([]);
       return;
@@ -32,6 +29,18 @@ export default function PostForm() {
 
     if (hasVideo && files.length > 1) {
       alert('For now, video posts can only have one video file.');
+      return;
+    }
+
+    const hasTooLargeFile = files.some((file) => file.size > 20 * 1024 * 1024);
+
+    if (hasTooLargeFile) {
+      alert('Each media file must be smaller than 20MB.');
+      return;
+    }
+
+    if (files.length > 5) {
+      alert('Maximum 5 media files per post for now.');
       return;
     }
 
@@ -131,12 +140,6 @@ export default function PostForm() {
         alert('Ticket link must start with http:// or https://');
         return;
       }
-    }
-
-    // Light validation for pilot
-    if (mediaFiles.length > 5) {
-      alert('Maximum 5 media files per post for now.');
-      return;
     }
 
     setLoading(true);
@@ -259,7 +262,7 @@ export default function PostForm() {
           style={styles.fileInput}
         />
         <p style={styles.helperText}>
-          You can upload up to 5 images, or 1 video. For now, image carousels are supported.
+          You can upload up to 5 images, or 1 video. Each file must be smaller than 20MB.
         </p>
       </div>
 

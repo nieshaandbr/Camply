@@ -9,6 +9,7 @@ export default function Sidebar() {
   const menuItems = [
     { name: 'Home', path: '/dashboard', icon: '🏠' },
     { name: 'New Post', path: '/create-post', icon: '➕' },
+    { name: 'Post History', path: '/post-history', icon: '📚' },
     { name: 'Applicants', path: '/applications', icon: '👥' },
   ];
 
