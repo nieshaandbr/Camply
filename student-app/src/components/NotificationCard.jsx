@@ -1,19 +1,34 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-export default function NotificationCard({ notification }) {
-  // Format the date so notifications look cleaner and easier to scan.
+/**
+ * A richer in-app notification card.
+ * Different dot colors help students distinguish between
+ * post notifications and application-status notifications.
+ */
+export default function NotificationCard({ notification, onPress }) {
   const formattedDate = new Date(notification.created_at).toLocaleString();
 
   return (
-    <View style={styles.card}>
-      <View style={styles.dot} />
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.75}>
+      <View
+        style={[
+          styles.dot,
+          notification.notification_type === 'application_status'
+            ? styles.applicationDot
+            : styles.postDot,
+        ]}
+      />
 
       <View style={styles.content}>
+        <Text style={styles.title}>
+          {notification.title || 'Notification'}
+        </Text>
+
         <Text style={styles.message}>{notification.message}</Text>
         <Text style={styles.time}>{formattedDate}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -30,16 +45,27 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#001DAF',
     marginRight: 14,
     marginTop: 6,
+  },
+  postDot: {
+    backgroundColor: '#1D3E6E',
+  },
+  applicationDot: {
+    backgroundColor: '#16a34a',
   },
   content: {
     flex: 1,
   },
+  title: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
   message: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#111827',
     lineHeight: 22,
   },
