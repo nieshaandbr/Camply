@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "student-app",
+    "name": "Camply",
     "slug": "student-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Camply-logo.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -20,7 +20,8 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.nieshaan.camply"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -28,6 +29,12 @@
     "plugins": [
       "expo-image",
       "expo-video"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8f568840-0e85-4fd5-9fe8-14dce2b8dbdb"
+      }
+    },
+    "owner": "nieshaan"
   }
 }
