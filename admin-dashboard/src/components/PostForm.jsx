@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../store/authStore';
+import { sendPushNotifications } from '../services/pushNotifications';
 
 export default function PostForm() {
   const { admin } = useAuthStore();
@@ -90,10 +91,14 @@ export default function PostForm() {
     };
   };
 
-  const createNotificationsForStudents = async (postType, postTitle) => {
+  /**
+   * Create in-app notifications and send push notifications to every student
+   * in the admin's university after a post is published.
+   */
+  const createNotificationsForStudents = async (postType, postTitle, createdPostId) => {
     const { data: students, error: studentsError } = await supabase
       .from('students')
-      .select('id')
+      .select('id, push_token')
       .eq('university_id', admin.university_id);
 
     if (studentsError) {
@@ -104,7 +109,11 @@ export default function PostForm() {
 
     const notificationRows = students.map((student) => ({
       user_id: student.id,
-      message: `New ${postType} posted: ${postTitle}`,
+      title: 'New campus update',
+      message: postTitle,
+      notification_type: 'post',
+      reference_type: 'post',
+      reference_id: createdPostId,
     }));
 
     const { error: notificationError } = await supabase
@@ -114,6 +123,19 @@ export default function PostForm() {
     if (notificationError) {
       throw new Error(`Failed to create notifications: ${notificationError.message}`);
     }
+
+    const pushTokens = students.map((student) => student.push_token).filter(Boolean);
+
+    await sendPushNotifications(
+      pushTokens,
+      'Camply',
+      `New ${postType} posted: ${postTitle}`,
+      {
+        notificationType: 'post',
+        referenceType: 'post',
+        referenceId: createdPostId,
+      }
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -161,7 +183,11 @@ export default function PostForm() {
         expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       };
 
-      const { error } = await supabase.from('posts').insert([payload]);
+      // We select the inserted row back so we can use the new post ID in notifications.
+      const { data: insertedPosts, error } = await supabase
+        .from('posts')
+        .insert([payload])
+        .select();
 
       if (error) {
         console.error('Create post error:', error);
@@ -169,7 +195,9 @@ export default function PostForm() {
         return;
       }
 
-      await createNotificationsForStudents(type, title.trim());
+      const createdPost = insertedPosts?.[0];
+
+      await createNotificationsForStudents(type, title.trim(), createdPost?.id);
 
       alert('Post created successfully!');
       setTitle('');

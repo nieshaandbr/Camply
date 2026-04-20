@@ -3,6 +3,7 @@ import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { useAdminGuideStore } from '../../store/adminGuideStore';
 import AdminGuideOverlay from '../../components/guide/AdminGuideOverlay';
+import { sendPushNotifications } from '../../services/pushNotifications';
 
 export default function ApplicationListPage() {
   const { admin } = useAuthStore();
@@ -63,8 +64,16 @@ export default function ApplicationListPage() {
     fetchApplications();
   }, []);
 
+  /**
+   * When admin accepts/rejects:
+   * - update the application status
+   * - create an in-app notification for the student
+   * - send a push notification to the student's phone if token exists
+   */
   const updateStatus = async (applicationId, newStatus) => {
     try {
+      const targetApplication = applications.find((app) => app.id === applicationId);
+
       const { error } = await supabase
         .from('applications')
         .update({ status: newStatus })
@@ -74,6 +83,38 @@ export default function ApplicationListPage() {
         console.error('Update application status error:', error);
         alert('Failed to update application status.');
         return;
+      }
+
+      if (targetApplication?.students?.id) {
+        const { data: studentRecord } = await supabase
+          .from('students')
+          .select('push_token')
+          .eq('id', targetApplication.students.id)
+          .single();
+
+        await supabase.from('notifications').insert([
+          {
+            user_id: targetApplication.students.id,
+            title: 'Job application progress',
+            message: `Your application for "${targetApplication.posts?.title}" was ${newStatus}.`,
+            notification_type: 'application_status',
+            reference_type: 'job_application',
+            reference_id: targetApplication.posts?.id || null,
+          },
+        ]);
+
+        if (studentRecord?.push_token) {
+          await sendPushNotifications(
+            [studentRecord.push_token],
+            'Job application progress',
+            `Your application for "${targetApplication.posts?.title}" was ${newStatus}.`,
+            {
+              notificationType: 'application_status',
+              referenceType: 'job_application',
+              referenceId: targetApplication.posts?.id || null,
+            }
+          );
+        }
       }
 
       fetchApplications();

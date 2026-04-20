@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
@@ -13,7 +14,7 @@ import { useGuideStore } from '../../store/guideStore';
 import NotificationCard from '../../components/NotificationCard';
 import GuideOverlay from '../../components/GuideOverlay';
 
-export default function NotificationsScreen() {
+export default function NotificationsScreen({ navigation }) {
   const { user } = useAuthStore();
   const { seenGuides, isLoaded, loadGuides, markGuideSeen } = useGuideStore();
 
@@ -25,6 +26,9 @@ export default function NotificationsScreen() {
     loadGuides();
   }, []);
 
+  /**
+   * Fetch only notifications for the logged-in student.
+   */
   const fetchNotifications = async () => {
     try {
       const { data, error } = await supabase
@@ -52,6 +56,49 @@ export default function NotificationsScreen() {
     fetchNotifications();
   }, []);
 
+  /**
+   * When a notification is tapped:
+   * - post notifications can take user to Home
+   * - job/application notifications can try to load the related post
+   */
+  const handleNotificationPress = async (notification) => {
+    try {
+      if (
+        (notification.reference_type === 'post' ||
+          notification.reference_type === 'job_application') &&
+        notification.reference_id
+      ) {
+        const { data: post, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('id', notification.reference_id)
+          .single();
+
+        // If the post no longer exists, still take student somewhere useful.
+        if (error || !post) {
+          navigation.navigate('HomeTab');
+          return;
+        }
+
+        if (post.type === 'job') {
+          navigation.navigate('HomeTab', {
+            screen: 'JobDetail',
+            params: { post },
+          });
+          return;
+        }
+
+        navigation.navigate('HomeTab');
+        return;
+      }
+
+      navigation.navigate('HomeTab');
+    } catch (error) {
+      console.error('Notification press error:', error);
+      Alert.alert('Error', 'Could not open this notification.');
+    }
+  };
+
   const showGuide = isLoaded && !seenGuides.notifications;
 
   if (loading) {
@@ -71,12 +118,12 @@ export default function NotificationsScreen() {
           {
             heading: 'Your Alerts',
             description:
-              'This screen shows important updates sent to your account, such as new posts from your university.',
+              'This screen shows important updates sent to your account, including post updates and application progress.',
           },
           {
-            heading: 'Stay Updated',
+            heading: 'Tap to Open',
             description:
-              'Check this tab often so you do not miss jobs, announcements, or event updates.',
+              'Tap a notification to jump to the related part of the app when available.',
           },
         ]}
         onFinish={() => markGuideSeen('notifications')}
@@ -87,7 +134,12 @@ export default function NotificationsScreen() {
       <FlatList
         data={notifications}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <NotificationCard notification={item} />}
+        renderItem={({ item }) => (
+          <NotificationCard
+            notification={item}
+            onPress={() => handleNotificationPress(item)}
+          />
+        )}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
