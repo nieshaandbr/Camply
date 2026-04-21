@@ -1,27 +1,23 @@
 import React, { useState } from 'react';
 import { supabase } from '../../services/supabase';
+import { sendOnboardingEmail } from '../../services/onboardingEmail';
 
 export default function StudentBulkForm({ universityId, onSuccess }) {
-  // Each row represents one student to be created for the selected university.
   const [rows, setRows] = useState([
     { name: '', email: '', student_number: '', password: '' },
   ]);
-
   const [loading, setLoading] = useState(false);
 
-  // Generate a simple temporary password for pilot onboarding.
   const generateTempPassword = () => {
     return Math.random().toString(36).slice(-8);
   };
 
-  // Update one field in one specific row.
   const handleRowChange = (index, field, value) => {
     const updatedRows = [...rows];
     updatedRows[index][field] = value;
     setRows(updatedRows);
   };
 
-  // Add a new blank student row to the form.
   const addRow = () => {
     setRows([
       ...rows,
@@ -29,8 +25,6 @@ export default function StudentBulkForm({ universityId, onSuccess }) {
     ]);
   };
 
-  // Remove a student row.
-  // If the last row is removed, keep one blank row so the UI does not become empty.
   const removeRow = (index) => {
     const updatedRows = rows.filter((_, i) => i !== index);
 
@@ -41,8 +35,6 @@ export default function StudentBulkForm({ universityId, onSuccess }) {
     );
   };
 
-  // Fill empty password fields with generated temporary passwords.
-  // Existing typed passwords are not overwritten.
   const autoGeneratePasswords = () => {
     const updatedRows = rows.map((row) => ({
       ...row,
@@ -55,13 +47,11 @@ export default function StudentBulkForm({ universityId, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // A university must be selected first, because every student belongs to one university.
     if (!universityId) {
       alert('Please select or create a university first.');
       return;
     }
 
-    // Clean up spaces before validation and saving.
     const cleanedRows = rows.map((row) => ({
       ...row,
       name: row.name.trim(),
@@ -70,7 +60,6 @@ export default function StudentBulkForm({ universityId, onSuccess }) {
       password: row.password.trim(),
     }));
 
-    // Make sure every visible row is complete.
     const hasInvalidRow = cleanedRows.some(
       (row) => !row.name || !row.email || !row.student_number || !row.password
     );
@@ -80,7 +69,6 @@ export default function StudentBulkForm({ universityId, onSuccess }) {
       return;
     }
 
-    // Validate emails so broken records are not inserted.
     const hasInvalidEmail = cleanedRows.some(
       (row) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)
     );
@@ -93,9 +81,6 @@ export default function StudentBulkForm({ universityId, onSuccess }) {
     setLoading(true);
 
     try {
-      // Prepare payload for Supabase.
-      // is_first_login = true so the student is forced to change
-      // the temporary password after first login in Phase A.
       const studentPayload = cleanedRows.map((row) => ({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         university_id: universityId,
@@ -114,12 +99,25 @@ export default function StudentBulkForm({ universityId, onSuccess }) {
         return;
       }
 
+      // Send emails one by one so each student gets their own login details.
+      for (const row of cleanedRows) {
+        try {
+          await sendOnboardingEmail({
+            userType: 'student',
+            name: row.name,
+            email: row.email,
+            studentNumber: row.student_number,
+            tempPassword: row.password,
+          });
+        } catch (emailError) {
+          console.error('Student onboarding email error:', emailError);
+        }
+      }
+
       alert('Students added successfully');
 
-      // Reset the form back to one blank row after successful insert.
       setRows([{ name: '', email: '', student_number: '', password: '' }]);
 
-      // Let parent page know the save worked, if needed.
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error('Unexpected student onboarding error:', err);
@@ -131,7 +129,6 @@ export default function StudentBulkForm({ universityId, onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
-      {/* Top action buttons for quickly expanding rows and generating passwords */}
       <div style={styles.topActions}>
         <button type="button" style={styles.secondaryBtn} onClick={addRow}>
           Add Student Row
@@ -142,7 +139,6 @@ export default function StudentBulkForm({ universityId, onSuccess }) {
         </button>
       </div>
 
-      {/* Render one form card per student row */}
       {rows.map((row, index) => (
         <div key={index} style={styles.rowCard}>
           <div style={styles.grid}>
@@ -190,7 +186,6 @@ export default function StudentBulkForm({ universityId, onSuccess }) {
         </div>
       ))}
 
-      {/* Final submit button */}
       <button type="submit" style={styles.primaryBtn} disabled={loading}>
         {loading ? 'Saving Students...' : 'Save Students'}
       </button>

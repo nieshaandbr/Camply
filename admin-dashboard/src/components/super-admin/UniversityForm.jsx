@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
+import { sendOnboardingEmail } from '../../services/onboardingEmail';
 
 export default function UniversityForm({ initialData = null, onSuccess }) {
-  // Form state
   const [universityName, setUniversityName] = useState('');
   const [location, setLocation] = useState('');
   const [adminName, setAdminName] = useState('');
@@ -10,12 +10,10 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
   const [adminPassword, setAdminPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // If initialData exists, we are editing an existing university
   const isEditMode = !!initialData;
 
   useEffect(() => {
     if (initialData) {
-      // Pre-fill form when editing
       setUniversityName(initialData.name || '');
       setLocation(initialData.location || '');
       setAdminName(initialData.admin_name || '');
@@ -23,13 +21,11 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
     }
   }, [initialData]);
 
-  // Simple text ID generator for pilot mode
   const generateTextId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
     if (!universityName.trim()) {
       alert('University name is required');
       return;
@@ -45,14 +41,12 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
       return;
     }
 
-    // Validate email format
     const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail.trim());
     if (!validEmail) {
       alert('Enter a valid email address');
       return;
     }
 
-    // Password is required only when creating a new university/admin
     if (!isEditMode && !adminPassword.trim()) {
       alert('Admin password is required');
       return;
@@ -62,9 +56,6 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
 
     try {
       if (isEditMode) {
-        // -----------------------------
-        // UPDATE EXISTING UNIVERSITY
-        // -----------------------------
         const { error: universityError } = await supabase
           .from('universities')
           .update({
@@ -77,9 +68,6 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
           throw new Error(universityError.message);
         }
 
-        // -----------------------------
-        // UPDATE EXISTING MAIN ADMIN
-        // -----------------------------
         const { error: adminError } = await supabase
           .from('admins')
           .update({
@@ -94,9 +82,6 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
 
         alert('University updated successfully');
       } else {
-        // -----------------------------
-        // CREATE NEW UNIVERSITY
-        // -----------------------------
         const universityId = generateTextId();
         const adminId = generateTextId();
 
@@ -114,10 +99,6 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
           throw new Error(universityError.message);
         }
 
-        // -----------------------------
-        // CREATE MAIN ADMIN
-        // is_first_login = true so Phase A can force password reset
-        // -----------------------------
         const { error: adminError } = await supabase
           .from('admins')
           .insert([
@@ -136,9 +117,23 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
           throw new Error(adminError.message);
         }
 
+        // Send onboarding email to the new admin.
+        try {
+          await sendOnboardingEmail({
+            userType: 'admin',
+            name: adminName.trim(),
+            email: adminEmail.trim(),
+            tempPassword: adminPassword.trim(),
+          });
+        } catch (emailError) {
+          console.error('Admin onboarding email error:', emailError);
+          alert(
+            'University and admin were created, but the onboarding email could not be sent.'
+          );
+        }
+
         alert('University and admin created successfully');
 
-        // Reset form after successful create
         setUniversityName('');
         setLocation('');
         setAdminName('');
@@ -146,7 +141,6 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
         setAdminPassword('');
       }
 
-      // Tell parent page to refresh its data if needed
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error('University form error:', err);
@@ -158,7 +152,6 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
-      {/* University Name */}
       <div style={styles.field}>
         <label style={styles.label}>University Name</label>
         <input
@@ -169,7 +162,6 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
         />
       </div>
 
-      {/* University Location */}
       <div style={styles.field}>
         <label style={styles.label}>Location</label>
         <input
@@ -180,7 +172,6 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
         />
       </div>
 
-      {/* Main Admin Name */}
       <div style={styles.field}>
         <label style={styles.label}>Main Admin Name</label>
         <input
@@ -191,7 +182,6 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
         />
       </div>
 
-      {/* Main Admin Email */}
       <div style={styles.field}>
         <label style={styles.label}>Main Admin Email</label>
         <input
@@ -203,9 +193,6 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
         />
       </div>
 
-      {/* Main Admin Temporary Password
-          Only show this when creating a new university/admin.
-          We use type="text" on purpose so pilot onboarding is easier to see and confirm. */}
       {!isEditMode && (
         <div style={styles.field}>
           <label style={styles.label}>Main Admin Temporary Password</label>
@@ -220,7 +207,6 @@ export default function UniversityForm({ initialData = null, onSuccess }) {
         </div>
       )}
 
-      {/* Submit button */}
       <button type="submit" style={styles.button} disabled={loading}>
         {loading
           ? isEditMode
