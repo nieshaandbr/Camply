@@ -1,11 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-/**
- * A richer in-app notification card.
- * Different dot colors help students distinguish between
- * post notifications and application-status notifications.
- */
 export default function NotificationCard({ notification, onPress }) {
   const formattedDate = new Date(notification.created_at).toLocaleString();
 

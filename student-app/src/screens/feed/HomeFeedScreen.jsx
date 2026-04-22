@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   FlatList,
@@ -30,7 +30,7 @@ export default function HomeFeedScreen({ navigation }) {
     loadGuides();
   }, []);
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       const now = new Date().toISOString();
 
@@ -52,11 +52,38 @@ export default function HomeFeedScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [user.university_id]);
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [fetchPosts]);
+
+  // Realtime updates so student feed changes without manual refresh.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`camply-posts-${user.university_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'posts',
+        },
+        (payload) => {
+          const changedUniversityId =
+            payload.new?.university_id || payload.old?.university_id;
+
+          if (changedUniversityId === user.university_id) {
+            fetchPosts();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user.university_id, fetchPosts]);
 
   const filteredPosts = useMemo(() => {
     if (selectedFilter === 'all') return posts;

@@ -12,10 +12,6 @@ import ChangePasswordScreen from '../screens/auth/ChangePasswordScreen';
 import BottomTabNavigator from './BottomTabNavigator';
 import { registerForPushNotifications } from '../services/notifications';
 
-/**
- * We keep a navigation ref so push-notification taps can navigate
- * even from outside a screen component.
- */
 export const navigationRef = createNavigationContainerRef();
 
 export default function AppNavigator() {
@@ -26,40 +22,19 @@ export default function AppNavigator() {
     loadSession();
   }, []);
 
-  /**
-   * Once a logged-in student is fully onboarded, register the device
-   * for push notifications and save the Expo token to Supabase.
-   */
   useEffect(() => {
     if (user && !user.is_first_login) {
       registerForPushNotifications(user);
     }
   }, [user]);
 
-  /**
-   * Handle taps on push notifications.
-   * For now:
-   * - post notifications take the user to Home
-   * - application notifications also take the user to Home
-   *
-   * This keeps it useful and stable for pilot.
-   */
+  // When the phone notification popup is tapped, take student to Notifications tab.
   useEffect(() => {
     notificationResponseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
+      Notifications.addNotificationResponseReceivedListener(() => {
         try {
-          const data = response?.notification?.request?.content?.data || {};
-
           if (!navigationRef.isReady()) return;
-
-          if (
-            data.notificationType === 'post' ||
-            data.notificationType === 'application_status'
-          ) {
-            navigationRef.navigate('Notifications');
-          } else {
-            navigationRef.navigate('HomeTab');
-          }
+          navigationRef.navigate('Notifications');
         } catch (error) {
           console.error('Notification tap handling error:', error);
         }
