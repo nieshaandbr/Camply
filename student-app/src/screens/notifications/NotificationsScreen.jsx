@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -26,10 +26,7 @@ export default function NotificationsScreen({ navigation }) {
     loadGuides();
   }, []);
 
-  /**
-   * Fetch only notifications for the logged-in student.
-   */
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -50,22 +47,49 @@ export default function NotificationsScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [user.id]);
 
   useEffect(() => {
     fetchNotifications();
-  }, []);
+  }, [fetchNotifications]);
 
-  /**
-   * When a notification is tapped:
-   * - post notifications can take user to Home
-   * - job/application notifications can try to load the related post
-   */
+  // Realtime updates so notifications appear without manual refresh.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`camply-notifications-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+        },
+        (payload) => {
+          const targetUserId = payload.new?.user_id || payload.old?.user_id;
+
+          if (targetUserId === user.id) {
+            fetchNotifications();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user.id, fetchNotifications]);
+
   const handleNotificationPress = async (notification) => {
     try {
+      // Post notifications should take the student back to the feed.
+      if (notification.reference_type === 'post' && notification.reference_id) {
+        navigation.navigate('HomeTab', { screen: 'Feed' });
+        return;
+      }
+
+      // Application progress notifications should open the job detail page if possible.
       if (
-        (notification.reference_type === 'post' ||
-          notification.reference_type === 'job_application') &&
+        notification.reference_type === 'job_application' &&
         notification.reference_id
       ) {
         const { data: post, error } = await supabase
@@ -74,9 +98,8 @@ export default function NotificationsScreen({ navigation }) {
           .eq('id', notification.reference_id)
           .single();
 
-        // If the post no longer exists, still take student somewhere useful.
         if (error || !post) {
-          navigation.navigate('HomeTab');
+          navigation.navigate('HomeTab', { screen: 'Feed' });
           return;
         }
 
@@ -88,11 +111,11 @@ export default function NotificationsScreen({ navigation }) {
           return;
         }
 
-        navigation.navigate('HomeTab');
+        navigation.navigate('HomeTab', { screen: 'Feed' });
         return;
       }
 
-      navigation.navigate('HomeTab');
+      navigation.navigate('HomeTab', { screen: 'Feed' });
     } catch (error) {
       console.error('Notification press error:', error);
       Alert.alert('Error', 'Could not open this notification.');

@@ -12,8 +12,6 @@ import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// This stack lets the Home tab open extra screens like JobDetail
-// without leaving the Home tab flow.
 function HomeStackScreen() {
   return (
     <Stack.Navigator>
