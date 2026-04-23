@@ -8,6 +8,7 @@ import ApplicationListPage from './pages/applications/ApplicationListPage';
 import ViewPostHistoryPage from './pages/posts/ViewPostHistoryPage';
 import ChangePasswordPage from './pages/auth/ChangePasswordPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import AdminQuestionnairesPage from './pages/questionnaires/AdminQuestionnairesPage';
 
 // Super Admin
 import SuperAdminLoginPage from './pages/super-admin/SuperAdminLoginPage';
@@ -16,6 +17,7 @@ import UniversitiesPage from './pages/super-admin/UniversitiesPage';
 import EditUniversityPage from './pages/super-admin/EditUniversityPage';
 import PilotOnboardingPage from './pages/super-admin/PilotOnboardingPage';
 import QuestionnairesPage from './pages/super-admin/QuestionnairesPage';
+import QuestionnaireDetailPage from './pages/super-admin/QuestionnaireDetailPage';
 import SuperAdminLayout from './components/super-admin/SuperAdminLayout';
 
 const Layout = ({ children }) => (
@@ -93,6 +95,17 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/admin-questionnaires"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AdminQuestionnairesPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
 
         <Route
@@ -136,6 +149,15 @@ export default function App() {
           element={
             <SuperAdminLayout>
               <QuestionnairesPage />
+            </SuperAdminLayout>
+          }
+        />
+
+        <Route
+          path="/super-admin/questionnaires/:id"
+          element={
+            <SuperAdminLayout>
+              <QuestionnaireDetailPage />
             </SuperAdminLayout>
           }
         />

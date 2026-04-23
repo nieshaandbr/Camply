@@ -38,8 +38,10 @@ export default function QuestionnairesScreen() {
       }
 
       const filtered =
-        (data || []).filter((q) =>
-          (q.target_university_ids || []).includes(user.university_id)
+        (data || []).filter(
+          (q) =>
+            (q.target_university_ids || []).includes(user.university_id) &&
+            (q.target_role === 'student' || q.target_role === 'both')
         ) || [];
 
       setQuestionnaires(filtered);
@@ -89,6 +91,8 @@ export default function QuestionnairesScreen() {
         {
           questionnaire_id: questionnaire.id,
           student_id: user.id,
+          admin_id: null,
+          responder_role: 'student',
           university_id: user.university_id,
           answers: orderedAnswers,
           created_at: new Date().toISOString(),
@@ -198,7 +202,8 @@ export default function QuestionnairesScreen() {
                           key={rating}
                           style={[
                             styles.ratingBtn,
-                            String(answerValue) === String(rating) && styles.choiceBtnActive,
+                            String(answerValue) === String(rating) &&
+                              styles.choiceBtnActive,
                           ]}
                           onPress={() =>
                             updateAnswer(questionnaire.id, index, String(rating))
