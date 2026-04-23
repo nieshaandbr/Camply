@@ -48,6 +48,11 @@ export default function LoginPage() {
       return;
     }
 
+    if (!email.trim() || !password) {
+      alert('Please enter your email and password');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -60,17 +65,25 @@ export default function LoginPage() {
 
       if (error || !data) {
         alert('Admin not found for the selected university');
-      } else if (data.password_hash !== password) {
-        alert('Incorrect password');
-      } else {
-        setAdmin(data);
-        localStorage.setItem('camply_admin_sessions', JSON.stringify(data));
+        return;
+      }
 
-        if (data.is_first_login) {
-          navigate('/change-password');
-        } else {
-          navigate('/dashboard')
-        }
+      if (data.password_hash !== password) {
+        alert('Incorrect password');
+        return;
+      }
+
+      // Save admin in Zustand state
+      setAdmin(data);
+
+      // IMPORTANT:
+      // This key must match the key used in authStore.js
+      localStorage.setItem('camply_admin_session', JSON.stringify(data));
+
+      if (data.is_first_login) {
+        navigate('/change-password');
+      } else {
+        navigate('/dashboard');
       }
     } catch (err) {
       console.error('Admin login error:', err);

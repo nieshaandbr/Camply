@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 
 export default function QuestionnairesPage() {
+  const navigate = useNavigate();
+
   const [universities, setUniversities] = useState([]);
   const [questionnaires, setQuestionnaires] = useState([]);
   const [responseCounts, setResponseCounts] = useState({});
@@ -12,6 +15,7 @@ export default function QuestionnairesPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
+  const [targetRole, setTargetRole] = useState('both');
   const [selectedUniversityIds, setSelectedUniversityIds] = useState([]);
   const [questions, setQuestions] = useState([
     { question: '', type: 'text' },
@@ -39,12 +43,14 @@ export default function QuestionnairesPage() {
 
       if (error) {
         console.error('Fetch universities error:', error);
+        alert('Could not load universities');
         return;
       }
 
       setUniversities(data || []);
     } catch (error) {
       console.error('Unexpected fetch universities error:', error);
+      alert('Something went wrong while loading universities');
     }
   };
 
@@ -66,7 +72,7 @@ export default function QuestionnairesPage() {
       const questionnairesData = data || [];
       setQuestionnaires(questionnairesData);
 
-      // Load response counts for each questionnaire
+      // Load total response counts for each questionnaire.
       const counts = {};
 
       for (const questionnaire of questionnairesData) {
@@ -142,6 +148,7 @@ export default function QuestionnairesPage() {
         title: title.trim(),
         description: description.trim() || null,
         target_university_ids: selectedUniversityIds,
+        target_role: targetRole,
         questions: cleanedQuestions,
         is_active: true,
         created_at: new Date().toISOString(),
@@ -161,6 +168,7 @@ export default function QuestionnairesPage() {
       setTitle('');
       setDescription('');
       setExpiresAt('');
+      setTargetRole('both');
       setSelectedUniversityIds([]);
       setQuestions([{ question: '', type: 'text' }]);
 
@@ -198,7 +206,7 @@ export default function QuestionnairesPage() {
       <div style={styles.header}>
         <h1 style={styles.title}>Questionnaires</h1>
         <p style={styles.subtitle}>
-          Create pilot feedback forms and target one or more universities.
+          Create pilot feedback forms for students, admins, or both.
         </p>
       </div>
 
@@ -226,6 +234,19 @@ export default function QuestionnairesPage() {
                 style={styles.textarea}
                 placeholder="Tell users why this feedback matters"
               />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Target Audience</label>
+              <select
+                value={targetRole}
+                onChange={(e) => setTargetRole(e.target.value)}
+                style={styles.input}
+              >
+                <option value="student">Students</option>
+                <option value="admin">Admins</option>
+                <option value="both">Both</option>
+              </select>
             </div>
 
             <div style={styles.field}>
@@ -310,26 +331,49 @@ export default function QuestionnairesPage() {
               {questionnaires.map((questionnaire) => (
                 <div key={questionnaire.id} style={styles.historyCard}>
                   <h3 style={styles.historyTitle}>{questionnaire.title}</h3>
+
+                  <p style={styles.historyMeta}>
+                    Audience: <strong>{questionnaire.target_role || 'both'}</strong>
+                  </p>
+
                   <p style={styles.historyMeta}>
                     Universities:{' '}
                     {(questionnaire.target_university_ids || [])
                       .map((id) => universityMap[id] || id)
                       .join(', ')}
                   </p>
+
                   <p style={styles.historyMeta}>
                     Responses: {responseCounts[questionnaire.id] || 0}
                   </p>
+
                   <p style={styles.historyMeta}>
                     Status: {questionnaire.is_active ? 'Active' : 'Inactive'}
                   </p>
 
-                  <button
-                    type="button"
-                    style={questionnaire.is_active ? styles.deactivateBtn : styles.activateBtn}
-                    onClick={() => toggleQuestionnaireStatus(questionnaire)}
-                  >
-                    {questionnaire.is_active ? 'Deactivate' : 'Activate'}
-                  </button>
+                  <div style={styles.actionRow}>
+                    <button
+                      type="button"
+                      style={styles.viewBtn}
+                      onClick={() =>
+                        navigate(`/super-admin/questionnaires/${questionnaire.id}`)
+                      }
+                    >
+                      View Responses
+                    </button>
+
+                    <button
+                      type="button"
+                      style={
+                        questionnaire.is_active
+                          ? styles.deactivateBtn
+                          : styles.activateBtn
+                      }
+                      onClick={() => toggleQuestionnaireStatus(questionnaire)}
+                    >
+                      {questionnaire.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -467,8 +511,22 @@ const styles = {
     margin: '6px 0',
     color: '#6b7280',
   },
-  deactivateBtn: {
+  actionRow: {
+    display: 'flex',
+    gap: '10px',
+    flexWrap: 'wrap',
     marginTop: '12px',
+  },
+  viewBtn: {
+    padding: '10px 14px',
+    borderRadius: '10px',
+    border: 'none',
+    background: '#1D3E6E',
+    color: '#fff',
+    fontWeight: '700',
+    cursor: 'pointer',
+  },
+  deactivateBtn: {
     padding: '10px 14px',
     borderRadius: '10px',
     border: 'none',
@@ -478,7 +536,6 @@ const styles = {
     cursor: 'pointer',
   },
   activateBtn: {
-    marginTop: '12px',
     padding: '10px 14px',
     borderRadius: '10px',
     border: 'none',
