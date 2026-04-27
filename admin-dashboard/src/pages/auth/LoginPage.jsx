@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [selectedUniversity, setSelectedUniversity] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingUniversities, setLoadingUniversities] = useState(true);
 
@@ -73,18 +74,10 @@ export default function LoginPage() {
         return;
       }
 
-      // Save admin in Zustand state
       setAdmin(data);
-
-      // IMPORTANT:
-      // This key must match the key used in authStore.js
       localStorage.setItem('camply_admin_session', JSON.stringify(data));
 
-      if (data.is_first_login) {
-        navigate('/change-password');
-      } else {
-        navigate('/dashboard');
-      }
+      navigate(data.is_first_login ? '/change-password' : '/dashboard');
     } catch (err) {
       console.error('Admin login error:', err);
       alert('Something went wrong. Try again.');
@@ -130,14 +123,24 @@ export default function LoginPage() {
           style={styles.input}
         />
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={styles.input}
-        />
+        <div style={styles.passwordWrap}>
+          <input
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={styles.passwordInput}
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            style={styles.eyeBtn}
+          >
+            {showPassword ? 'Hide' : 'Show'}
+          </button>
+        </div>
 
         <button type="submit" disabled={loading} style={styles.button}>
           {loading ? 'Authenticating...' : 'Login to Dashboard'}
@@ -181,6 +184,31 @@ const styles = {
     fontSize: '14px',
     outline: 'none',
     boxSizing: 'border-box',
+  },
+  passwordWrap: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '15px',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    overflow: 'hidden',
+    boxSizing: 'border-box',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: '12px',
+    border: 'none',
+    fontSize: '14px',
+    outline: 'none',
+  },
+  eyeBtn: {
+    padding: '12px',
+    border: 'none',
+    background: '#f3f4f6',
+    cursor: 'pointer',
+    fontWeight: '700',
+    color: '#1D3E6E',
   },
   button: {
     width: '100%',

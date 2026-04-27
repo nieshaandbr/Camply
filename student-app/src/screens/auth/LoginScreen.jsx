@@ -8,8 +8,12 @@ import {
   Alert,
   StyleSheet,
   Image,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { Ionicons } from '@expo/vector-icons';
 
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
@@ -19,6 +23,7 @@ export default function LoginScreen() {
   const [selectedUniversity, setSelectedUniversity] = useState('');
   const [studentNumber, setStudentNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingUniversities, setLoadingUniversities] = useState(true);
 
@@ -95,61 +100,93 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Image
-        source={require('../../../assets/Camply-logo.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+    <KeyboardAvoidingView
+      style={styles.keyboardWrap}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Image
+          source={require('../../../assets/Camply-logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-      <Text style={styles.title}>Welcome to Camply</Text>
-      <Text style={styles.subtitle}>Login with your student account</Text>
+        <Text style={styles.title}>Welcome to Camply</Text>
+        <Text style={styles.subtitle}>Login with your student account</Text>
 
-      <View style={styles.pickerWrapper}>
-        <Picker
-          selectedValue={selectedUniversity}
-          onValueChange={(itemValue) => setSelectedUniversity(itemValue)}
-        >
-          <Picker.Item label="Select your university" value="" />
-          {universities.map((uni) => (
-            <Picker.Item key={uni.id} label={uni.name} value={uni.id} />
-          ))}
-        </Picker>
-      </View>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={selectedUniversity}
+            onValueChange={(itemValue) => setSelectedUniversity(itemValue)}
+          >
+            <Picker.Item label="Select your university" value="" />
+            {universities.map((uni) => (
+              <Picker.Item key={uni.id} label={uni.name} value={uni.id} />
+            ))}
+          </Picker>
+        </View>
 
-      <TextInput
-        placeholder="Student Number"
-        style={styles.input}
-        value={studentNumber}
-        onChangeText={setStudentNumber}
-        autoCapitalize="none"
-      />
+        <TextInput
+          placeholder="Student Number"
+          style={styles.input}
+          value={studentNumber}
+          onChangeText={setStudentNumber}
+          autoCapitalize="none"
+          keyboardType="default"
+        />
 
-      <TextInput
-        placeholder="Password"
-        secureTextEntry
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-      />
+        <View style={styles.passwordWrapper}>
+          <TextInput
+            placeholder="Password"
+            secureTextEntry={!showPassword}
+            style={styles.passwordInput}
+            value={password}
+            onChangeText={setPassword}
+          />
 
-      <TouchableOpacity onPress={handleLogin} style={styles.button} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login</Text>}
-      </TouchableOpacity>
-    </View>
+          <TouchableOpacity
+            onPress={() => setShowPassword((prev) => !prev)}
+            style={styles.eyeBtn}
+          >
+            <Ionicons
+              name={showPassword ? 'eye-off' : 'eye'}
+              size={22}
+              color="#6b7280"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity onPress={handleLogin} style={styles.button} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Login</Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardWrap: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  container: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 30,
+    paddingBottom: 60,
     backgroundColor: '#fff',
   },
   logo: {
@@ -184,6 +221,23 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     fontSize: 14,
+  },
+  passwordWrapper: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 15,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 14,
+  },
+  eyeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   button: {
     backgroundColor: '#1D3E6E',

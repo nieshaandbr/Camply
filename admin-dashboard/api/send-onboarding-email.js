@@ -78,7 +78,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const from = process.env.RESEND_FROM_EMAIL;
+    const from = "Camply <onboarding@resend.dev>";
     const studentAppLink = process.env.VITE_CAMPLY_STUDENT_APP_LINK;
     const adminLink = process.env.VITE_CAMPLY_ADMIN_LINK;
 

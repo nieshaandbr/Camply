@@ -7,7 +7,12 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
 
@@ -16,6 +21,8 @@ export default function ChangePasswordScreen() {
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleChangePassword = async () => {
@@ -69,48 +76,92 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create a New Password</Text>
-      <Text style={styles.subtitle}>
-        You must change your temporary password before continuing.
-      </Text>
-
-      <TextInput
-        placeholder="New Password"
-        secureTextEntry
-        style={styles.input}
-        value={newPassword}
-        onChangeText={setNewPassword}
-      />
-
-      <TextInput
-        placeholder="Confirm New Password"
-        secureTextEntry
-        style={styles.input}
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-      />
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleChangePassword}
-        disabled={loading}
+    <KeyboardAvoidingView
+      style={styles.keyboardWrap}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save Password</Text>}
-      </TouchableOpacity>
+        <Text style={styles.title}>Create a New Password</Text>
+        <Text style={styles.subtitle}>
+          You must change your temporary password before continuing.
+        </Text>
 
-      <TouchableOpacity onPress={logout} style={styles.secondaryButton}>
-        <Text style={styles.secondaryText}>Logout</Text>
-      </TouchableOpacity>
-    </View>
+        <View style={styles.passwordWrapper}>
+          <TextInput
+            placeholder="New Password"
+            secureTextEntry={!showNewPassword}
+            style={styles.passwordInput}
+            value={newPassword}
+            onChangeText={setNewPassword}
+          />
+
+          <TouchableOpacity
+            onPress={() => setShowNewPassword((prev) => !prev)}
+            style={styles.eyeBtn}
+          >
+            <Ionicons
+              name={showNewPassword ? 'eye-off' : 'eye'}
+              size={22}
+              color="#6b7280"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.passwordWrapper}>
+          <TextInput
+            placeholder="Confirm New Password"
+            secureTextEntry={!showConfirmPassword}
+            style={styles.passwordInput}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+          />
+
+          <TouchableOpacity
+            onPress={() => setShowConfirmPassword((prev) => !prev)}
+            style={styles.eyeBtn}
+          >
+            <Ionicons
+              name={showConfirmPassword ? 'eye-off' : 'eye'}
+              size={22}
+              color="#6b7280"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleChangePassword}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Save Password</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={logout} style={styles.secondaryButton}>
+          <Text style={styles.secondaryText}>Logout</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  keyboardWrap: {
     flex: 1,
+    backgroundColor: '#fff',
+  },
+  container: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 30,
+    paddingBottom: 60,
     backgroundColor: '#fff',
   },
   title: {
@@ -126,13 +177,22 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 20,
   },
-  input: {
+  passwordWrapper: {
     borderWidth: 1,
     borderColor: '#ddd',
     marginBottom: 15,
-    padding: 12,
     borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
     fontSize: 14,
+  },
+  eyeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   button: {
     backgroundColor: '#1D3E6E',
