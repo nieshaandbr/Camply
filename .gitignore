@@ -1,0 +1,8 @@
+# Secrets
+.env
+.env.*
+student-app/camply-key.json
+student-app/google-services.json
+admin-dashboard/.env.local
+
+admin-dashboard/.env
