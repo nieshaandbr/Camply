@@ -53,7 +53,6 @@ export default function NotificationsScreen({ navigation }) {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Realtime updates so notifications appear without manual refresh.
   useEffect(() => {
     const channel = supabase
       .channel(`camply-notifications-${user.id}`)
@@ -79,39 +78,48 @@ export default function NotificationsScreen({ navigation }) {
     };
   }, [user.id, fetchNotifications]);
 
+  const openPostOnFeed = async (postId) => {
+    if (!postId) {
+      navigation.navigate('HomeTab', { screen: 'Feed' });
+      return;
+    }
+
+    const { data: post, error } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('id', postId)
+      .single();
+
+    if (error || !post) {
+      navigation.navigate('HomeTab', { screen: 'Feed' });
+      return;
+    }
+
+    if (post.type === 'job') {
+      navigation.navigate('HomeTab', {
+        screen: 'JobDetail',
+        params: { post },
+      });
+      return;
+    }
+
+    navigation.navigate('HomeTab', {
+      screen: 'Feed',
+      params: {
+        targetPostId: post.id,
+      },
+    });
+  };
+
   const handleNotificationPress = async (notification) => {
     try {
-      // Post notifications should take the student back to the feed.
-      if (notification.reference_type === 'post' && notification.reference_id) {
-        navigation.navigate('HomeTab', { screen: 'Feed' });
+      if (notification.reference_type === 'post') {
+        await openPostOnFeed(notification.reference_id);
         return;
       }
 
-      // Application progress notifications should open the job detail page if possible.
-      if (
-        notification.reference_type === 'job_application' &&
-        notification.reference_id
-      ) {
-        const { data: post, error } = await supabase
-          .from('posts')
-          .select('*')
-          .eq('id', notification.reference_id)
-          .single();
-
-        if (error || !post) {
-          navigation.navigate('HomeTab', { screen: 'Feed' });
-          return;
-        }
-
-        if (post.type === 'job') {
-          navigation.navigate('HomeTab', {
-            screen: 'JobDetail',
-            params: { post },
-          });
-          return;
-        }
-
-        navigation.navigate('HomeTab', { screen: 'Feed' });
+      if (notification.reference_type === 'job_application') {
+        await openPostOnFeed(notification.reference_id);
         return;
       }
 
@@ -146,7 +154,7 @@ export default function NotificationsScreen({ navigation }) {
           {
             heading: 'Tap to Open',
             description:
-              'Tap a notification to jump to the related part of the app when available.',
+              'Tap a notification to jump to the related post or job where available.',
           },
         ]}
         onFinish={() => markGuideSeen('notifications')}

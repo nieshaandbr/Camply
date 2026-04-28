@@ -1,4 +1,3 @@
-// HomeFeedScreen.jsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
@@ -9,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
@@ -31,7 +31,19 @@ export default function HomeFeedScreen({ navigation }) {
     loadGuides();
   }, []);
 
+  const isPostVisible = useCallback((post) => {
+    if (!post) return false;
+
+    const belongsToUniversity = post.university_id === user?.university_id;
+    const isNotExpired =
+      !post.expires_at || new Date(post.expires_at).getTime() > Date.now();
+
+    return belongsToUniversity && isNotExpired;
+  }, [user?.university_id]);
+
   const fetchPosts = useCallback(async () => {
+    if (!user?.university_id) return;
+
     try {
       const now = new Date().toISOString();
 
@@ -53,16 +65,25 @@ export default function HomeFeedScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user.university_id]);
+  }, [user?.university_id]);
 
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
 
-  // Realtime updates so student feed changes without manual refresh.
+  // Refetch whenever user returns to Home tab.
+  useFocusEffect(
+    useCallback(() => {
+      fetchPosts();
+    }, [fetchPosts])
+  );
+
+  // Realtime feed updates.
   useEffect(() => {
+    if (!user?.university_id) return;
+
     const channel = supabase
-      .channel(`camply-posts-${user.university_id}`)
+      .channel(`camply-posts-live-${user.university_id}`)
       .on(
         'postgres_changes',
         {
@@ -71,20 +92,66 @@ export default function HomeFeedScreen({ navigation }) {
           table: 'posts',
         },
         (payload) => {
-          const changedUniversityId =
-            payload.new?.university_id || payload.old?.university_id;
+          console.log('Realtime post payload:', payload.eventType);
 
-          if (changedUniversityId === user.university_id) {
-            fetchPosts();
+          const newPost = payload.new;
+          const oldPost = payload.old;
+
+          if (payload.eventType === 'INSERT') {
+            if (!isPostVisible(newPost)) return;
+
+            setPosts((prevPosts) => {
+              const alreadyExists = prevPosts.some((post) => post.id === newPost.id);
+              if (alreadyExists) return prevPosts;
+
+              return [newPost, ...prevPosts];
+            });
+
+            return;
+          }
+
+          if (payload.eventType === 'UPDATE') {
+            const changedUniversityId = newPost?.university_id || oldPost?.university_id;
+            if (changedUniversityId !== user.university_id) return;
+
+            setPosts((prevPosts) => {
+              const shouldShow = isPostVisible(newPost);
+
+              if (!shouldShow) {
+                return prevPosts.filter((post) => post.id !== newPost.id);
+              }
+
+              const exists = prevPosts.some((post) => post.id === newPost.id);
+
+              if (!exists) {
+                return [newPost, ...prevPosts];
+              }
+
+              return prevPosts.map((post) =>
+                post.id === newPost.id ? newPost : post
+              );
+            });
+
+            return;
+          }
+
+          if (payload.eventType === 'DELETE') {
+            if (!oldPost?.id) return;
+
+            setPosts((prevPosts) =>
+              prevPosts.filter((post) => post.id !== oldPost.id)
+            );
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Posts realtime status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user.university_id, fetchPosts]);
+  }, [user?.university_id, isPostVisible]);
 
   const filteredPosts = useMemo(() => {
     if (selectedFilter === 'all') return posts;
