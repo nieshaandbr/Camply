@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   FlatList,
@@ -8,7 +8,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
@@ -19,11 +19,15 @@ import GuideOverlay from '../../components/GuideOverlay';
 const FILTERS = ['all', 'announcement', 'event', 'job'];
 
 export default function HomeFeedScreen({ navigation }) {
+  const route = useRoute();
+  const listRef = useRef(null);
+
   const { user } = useAuthStore();
   const { seenGuides, isLoaded, loadGuides, markGuideSeen } = useGuideStore();
 
   const [posts, setPosts] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [highlightedPostId, setHighlightedPostId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -31,15 +35,18 @@ export default function HomeFeedScreen({ navigation }) {
     loadGuides();
   }, []);
 
-  const isPostVisible = useCallback((post) => {
-    if (!post) return false;
+  const isPostVisible = useCallback(
+    (post) => {
+      if (!post) return false;
 
-    const belongsToUniversity = post.university_id === user?.university_id;
-    const isNotExpired =
-      !post.expires_at || new Date(post.expires_at).getTime() > Date.now();
+      const belongsToUniversity = post.university_id === user?.university_id;
+      const isNotExpired =
+        !post.expires_at || new Date(post.expires_at).getTime() > Date.now();
 
-    return belongsToUniversity && isNotExpired;
-  }, [user?.university_id]);
+      return belongsToUniversity && isNotExpired;
+    },
+    [user?.university_id]
+  );
 
   const fetchPosts = useCallback(async () => {
     if (!user?.university_id) return;
@@ -71,14 +78,12 @@ export default function HomeFeedScreen({ navigation }) {
     fetchPosts();
   }, [fetchPosts]);
 
-  // Refetch whenever user returns to Home tab.
   useFocusEffect(
     useCallback(() => {
       fetchPosts();
     }, [fetchPosts])
   );
 
-  // Realtime feed updates.
   useEffect(() => {
     if (!user?.university_id) return;
 
@@ -92,8 +97,6 @@ export default function HomeFeedScreen({ navigation }) {
           table: 'posts',
         },
         (payload) => {
-          console.log('Realtime post payload:', payload.eventType);
-
           const newPost = payload.new;
           const oldPost = payload.old;
 
@@ -103,7 +106,6 @@ export default function HomeFeedScreen({ navigation }) {
             setPosts((prevPosts) => {
               const alreadyExists = prevPosts.some((post) => post.id === newPost.id);
               if (alreadyExists) return prevPosts;
-
               return [newPost, ...prevPosts];
             });
 
@@ -157,6 +159,37 @@ export default function HomeFeedScreen({ navigation }) {
     if (selectedFilter === 'all') return posts;
     return posts.filter((post) => post.type === selectedFilter);
   }, [posts, selectedFilter]);
+
+  useEffect(() => {
+    const targetPostId = route.params?.targetPostId;
+
+    if (!targetPostId || filteredPosts.length === 0) return;
+
+    const index = filteredPosts.findIndex(
+      (post) => String(post.id) === String(targetPostId)
+    );
+
+    if (index === -1) {
+      setSelectedFilter('all');
+      return;
+    }
+
+    setHighlightedPostId(targetPostId);
+
+    setTimeout(() => {
+      listRef.current?.scrollToIndex({
+        index,
+        animated: true,
+        viewPosition: 0.2,
+      });
+    }, 300);
+
+    const timer = setTimeout(() => {
+      setHighlightedPostId(null);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [route.params?.targetPostId, filteredPosts]);
 
   const showGuide = isLoaded && !seenGuides.home_feed;
 
@@ -217,9 +250,22 @@ export default function HomeFeedScreen({ navigation }) {
       </View>
 
       <FlatList
+        ref={listRef}
         data={filteredPosts}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <PostCard post={item} navigation={navigation} />}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              String(item.id) === String(highlightedPostId) &&
+                styles.highlightedPost,
+            ]}
+          >
+            <PostCard post={item} navigation={navigation} />
+          </View>
+        )}
+        onScrollToIndexFailed={() => {
+          listRef.current?.scrollToOffset({ offset: 0, animated: true });
+        }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -312,6 +358,14 @@ const styles = StyleSheet.create({
   },
   activeFilterText: {
     color: '#fff',
+  },
+  highlightedPost: {
+    borderWidth: 2,
+    borderColor: '#E89338',
+    borderRadius: 14,
+    marginHorizontal: 6,
+    marginBottom: 8,
+    overflow: 'hidden',
   },
   listContent: {
     paddingBottom: 24,
