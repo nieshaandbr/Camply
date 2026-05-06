@@ -1,16 +1,29 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { supabase } from './src/services/supabase';
+import * as Notifications from 'expo-notifications';
+import { sendLocalTestNotification } from './src/services/notifications';
+
+// ✅ Correct handler (ONLY config here)
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function App() {
   useEffect(() => {
-    async function testFetch() {
-      const { data, error } = await supabase.from('posts').select('*');
-      if (error) console.log('Supabase Error:', error.message);
-      else console.log('Fetched Posts:', data);
-    }
-    testFetch();
-  }, []);
+  async function testFetch() {
+    const { data, error } = await supabase.from('posts').select('*');
+    if (error) console.log('Supabase Error:', error.message);
+    else console.log('Fetched Posts:', data);
+  }
+
+  testFetch();
+  sendLocalTestNotification();
+}, []);
 
   return (
     <View style={styles.container}>
