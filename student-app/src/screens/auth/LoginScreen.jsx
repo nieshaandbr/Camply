@@ -86,7 +86,7 @@ export default function LoginScreen() {
         const token = await registerForPushNotifications(data);
 
         if (token) {
-          console.log('Push token xsaved:', token);
+          console.log('Push token saved:', token);
         };
       }
     } catch (err) {
