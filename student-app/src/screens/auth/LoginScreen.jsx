@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
+import { registerForPushNotifications } from '../../services/notifications';
 
 export default function LoginScreen() {
   const [universities, setUniversities] = useState([]);
@@ -82,6 +83,8 @@ export default function LoginScreen() {
         Alert.alert('Error', 'Incorrect password');
       } else {
         await setUser(data);
+        const token = await registerForPushNotifications(data);
+        console.log('Generated push token:', token);
       }
     } catch (err) {
       console.error('Student login error:', err);

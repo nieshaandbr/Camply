@@ -1,33 +1,36 @@
 /**
- * Sends Expo push notifications to one or more saved Expo push tokens.
- * This is good enough for pilot use.
+ * Sends push notifications through our Vercel serverless API.
  */
-export async function sendPushNotifications(tokens = [], title, body, data = {}) {
+export async function sendPushNotifications(
+  tokens = [],
+  title,
+  body,
+  data = {}
+) {
   const cleanTokens = tokens.filter(Boolean);
 
-  if (!cleanTokens.length) return;
-
-  const messages = cleanTokens.map((token) => ({
-    to: token,
-    sound: 'default',
-    title,
-    body,
-    data,
-  }));
+  if (!cleanTokens.length) {
+    console.log('No valid push tokens found.');
+    return;
+  }
 
   try {
-    const response = await fetch('https://exp.host/--/api/v2/push/send', {
+    const response = await fetch('/api/send-push-notification', {
       method: 'POST',
       headers: {
-        Accept: 'application/json',
-        'Accept-encoding': 'gzip, deflate',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(messages),
+      body: JSON.stringify({
+        tokens: cleanTokens,
+        title,
+        body,
+        data,
+      }),
     });
 
     const result = await response.json();
-    console.log('Expo push result:', result);
+
+    console.log('Push notification result:', result);
   } catch (error) {
     console.error('Push send error:', error);
   }

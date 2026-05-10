@@ -20,7 +20,8 @@
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "permissions": ["android.permission.POST_NOTIFICATIONS"]
         },
         "package": "com.nieshaan.camply"
       },
@@ -29,7 +30,8 @@
     },
     "plugins": [
       "expo-image",
-      "expo-video"
+      "expo-video",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {
