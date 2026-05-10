@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../services/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { registerForPushNotifications } from '../../services/notifications';
+import { registerForPushNotifications } from '../../services/notifications';
 
 export default function LoginScreen() {
   const [universities, setUniversities] = useState([]);

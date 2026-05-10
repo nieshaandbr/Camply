@@ -81,3 +81,13 @@ export async function registerForPushNotifications(user) {
     return null;
   }
 }
+
+export async function sendLocalTestNotification() {
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "Camply Test",
+      body: "Notifications are working 🚀",
+    },
+    trigger: { seconds: 2 },
+  });
+}
