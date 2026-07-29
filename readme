@@ -1,0 +1,260 @@
+# 📱 Camply
+
+> A multi-tenant university engagement platform designed to improve communication between higher education institutions and their students.
+
+![React Native](https://img.shields.io/badge/React_Native-Mobile-blue)
+![React](https://img.shields.io/badge/React-Admin_Dashboard-61DAFB)
+![Supabase](https://img.shields.io/badge/Supabase-Backend-green)
+![Expo](https://img.shields.io/badge/Expo-SDK-black)
+![Status](https://img.shields.io/badge/Status-MVP-orange)
+
+---
+
+## 📖 Overview
+
+Camply is a Software-as-a-Service (SaaS) platform built to modernize how universities communicate with students.
+
+Many institutions rely on fragmented communication channels such as emails, WhatsApp groups, notice boards, and social media. Important announcements, job opportunities, events, and surveys often fail to reach students effectively.
+
+Camply centralizes these services into a single mobile application while providing administrators with an intuitive dashboard to manage campus communication.
+
+The platform was designed with multi-tenancy in mind, allowing multiple universities to operate independently within the same system.
+
+---
+
+## 🚀 Features
+
+### Student Mobile App
+
+* Secure Authentication
+* University-specific access
+* View announcements
+* Browse upcoming events
+* Apply for student job opportunities
+* Complete questionnaires and surveys
+* Receive real-time notifications
+* Modern mobile-first interface
+
+### Admin Dashboard
+
+* Manage university announcements
+* Publish events
+* Create job opportunities
+* Build questionnaires
+* View student responses
+* Manage university users
+* Content management interface
+
+### Super Admin
+
+* Register new universities
+* Manage institutions
+* Multi-tenant onboarding
+* Platform administration
+
+---
+
+## 🏗 Architecture
+
+Camply consists of three main applications:
+
+```text
+Camply
+
+├── Student Mobile App (React Native + Expo)
+│
+├── University Admin Dashboard (React + Vite)
+│
+└── Backend (Supabase)
+      ├── Authentication
+      ├── PostgreSQL Database
+      ├── Realtime
+      ├── Storage
+      └── Serverless Functions
+```
+
+---
+
+## 🛠 Tech Stack
+
+### Frontend
+
+* React Native
+* Expo
+* React
+* Vite
+* TypeScript
+* Tailwind CSS
+
+### Backend
+
+* Supabase
+* PostgreSQL
+* Authentication
+* Realtime Database
+* Storage
+
+### Additional Services
+
+* Vercel Serverless Functions
+* Resend Email API
+* Firebase
+* GitHub
+
+---
+
+## 📱 Screens
+
+The MVP includes:
+
+* Login
+* Registration
+* Student Home
+* Announcements
+* Events
+* Job Opportunities
+* Surveys
+* Admin Dashboard
+* University Management
+
+> Screenshots will be added as development progresses.
+
+---
+
+## ⚙ Getting Started
+
+### Clone the repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/camply.git
+```
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Configure environment variables
+
+Create a `.env` file and add the required Supabase configuration.
+
+```env
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+```
+
+### Start development
+
+Student App
+
+```bash
+npx expo start
+```
+
+Admin Dashboard
+
+```bash
+npm run dev
+```
+
+---
+
+## 🎯 Project Goals
+
+The objective of Camply is to:
+
+* Improve communication between universities and students
+* Increase student engagement
+* Digitize campus announcements
+* Simplify event management
+* Help students discover employment opportunities
+* Collect student feedback efficiently
+* Provide universities with a scalable engagement platform
+
+---
+
+## 📌 Current Status
+
+✅ MVP under active development
+
+Implemented:
+
+* Core application architecture
+* Authentication
+* Multi-tenant foundation
+* Student application
+* Admin dashboard
+* Backend integration
+
+Planned:
+
+* Analytics dashboard
+* Push notifications
+* Student profiles
+* Attendance management
+* Calendar integration
+* File uploads
+* Production deployment
+
+---
+
+## 💡 Challenges Solved
+
+During development I focused on solving several real-world engineering problems:
+
+* Multi-tenant architecture
+* Shared backend for multiple institutions
+* Secure authentication
+* Scalable database design
+* Mobile-first user experience
+* Separation between student, university admin, and platform administrator roles
+
+---
+
+## 📚 What I Learned
+
+Building Camply strengthened my experience with:
+
+* React Native
+* Mobile application architecture
+* React
+* TypeScript
+* Supabase
+* Authentication
+* Database design
+* API integration
+* SaaS architecture
+* Multi-tenant systems
+* Full-stack application development
+
+---
+
+## 🔮 Future Roadmap
+
+* Push notifications
+* In-app messaging
+* Student societies
+* Timetable integration
+* Campus maps
+* Club management
+* QR attendance
+* AI-powered student assistant
+* Analytics reporting
+* Production deployment
+
+---
+
+## 👨‍💻 Author
+
+**Nieshaan de Beer**
+
+Software Engineer
+
+GitHub: https://github.com/nieshaandbr
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
